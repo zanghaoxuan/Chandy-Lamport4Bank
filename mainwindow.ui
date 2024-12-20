@@ -30,8 +30,8 @@
    <widget class="QPushButton" name="GetSnapshot">
     <property name="geometry">
      <rect>
-      <x>530</x>
-      <y>260</y>
+      <x>400</x>
+      <y>320</y>
       <width>91</width>
       <height>41</height>
      </rect>
@@ -43,8 +43,8 @@
    <widget class="QPushButton" name="StartTransfer">
     <property name="geometry">
      <rect>
-      <x>530</x>
-      <y>200</y>
+      <x>270</x>
+      <y>320</y>
       <width>91</width>
       <height>41</height>
      </rect>
@@ -56,11 +56,17 @@
    <widget class="QTableWidget" name="TransferTbale">
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>0</x>
       <y>10</y>
-      <width>401</width>
-      <height>331</height>
+      <width>601</width>
+      <height>221</height>
      </rect>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>16777215</width>
+      <height>16777215</height>
+     </size>
     </property>
     <column>
      <property name="text">
@@ -86,10 +92,10 @@
    <widget class="QTableWidget" name="BalanceTable">
     <property name="geometry">
      <rect>
-      <x>420</x>
-      <y>10</y>
-      <width>201</width>
-      <height>192</height>
+      <x>10</x>
+      <y>240</y>
+      <width>211</width>
+      <height>131</height>
      </rect>
     </property>
     <column>

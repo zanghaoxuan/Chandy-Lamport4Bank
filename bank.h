@@ -56,7 +56,7 @@ public:
     void setup_multicast_receiver();
 
     //send transfer money
-    bool send_transfer(int id, int amout, std::string &timestamp);
+    void send_transfer(int id, int amout, std::time_t timestamp);
 
     //receive transfer money
     void receive_transfer();
@@ -73,12 +73,14 @@ public:
 
     ~bank();
 private:
-    bool snapshot_flag = false;
     int balance;
     int bank_id;
     int bank_port;
     std::string multicast_group;
     SOCKET multicast_sock;
+    std::vector<std::string> inbound_messages; // 入站消息队列
+    std::mutex message_mutex;
+    std::atomic<bool> snapshot_flag;
 };
 
 

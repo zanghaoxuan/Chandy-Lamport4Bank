@@ -45,10 +45,10 @@ public:
         AddNode->setGeometry(QRect(530, 320, 91, 41));
         GetSnapshot = new QPushButton(centralwidget);
         GetSnapshot->setObjectName("GetSnapshot");
-        GetSnapshot->setGeometry(QRect(530, 260, 91, 41));
+        GetSnapshot->setGeometry(QRect(400, 320, 91, 41));
         StartTransfer = new QPushButton(centralwidget);
         StartTransfer->setObjectName("StartTransfer");
-        StartTransfer->setGeometry(QRect(530, 200, 91, 41));
+        StartTransfer->setGeometry(QRect(270, 320, 91, 41));
         TransferTbale = new QTableWidget(centralwidget);
         if (TransferTbale->columnCount() < 4)
             TransferTbale->setColumnCount(4);
@@ -61,7 +61,8 @@ public:
         QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
         TransferTbale->setHorizontalHeaderItem(3, __qtablewidgetitem3);
         TransferTbale->setObjectName("TransferTbale");
-        TransferTbale->setGeometry(QRect(10, 10, 401, 331));
+        TransferTbale->setGeometry(QRect(0, 10, 601, 221));
+        TransferTbale->setMaximumSize(QSize(16777215, 16777215));
         BalanceTable = new QTableWidget(centralwidget);
         if (BalanceTable->columnCount() < 2)
             BalanceTable->setColumnCount(2);
@@ -70,7 +71,7 @@ public:
         QTableWidgetItem *__qtablewidgetitem5 = new QTableWidgetItem();
         BalanceTable->setHorizontalHeaderItem(1, __qtablewidgetitem5);
         BalanceTable->setObjectName("BalanceTable");
-        BalanceTable->setGeometry(QRect(420, 10, 201, 192));
+        BalanceTable->setGeometry(QRect(10, 240, 211, 131));
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");

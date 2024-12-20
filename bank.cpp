@@ -51,7 +51,7 @@ void bank::setup_multicast_receiver(){
 }
 
 //暂存部分已发送数据，根据time值判断是否在
-bool bank::send_transfer(int id, int amout, std::string &timestamp) {
+void bank::send_transfer(int id, int amount, std::time_t timestamp) {
     WSADATA wsaData;
     SOCKET sock;
     sockaddr_in server_addr;
@@ -67,37 +67,20 @@ bool bank::send_transfer(int id, int amout, std::string &timestamp) {
     server_addr.sin_port = htons(port);
     inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
 
-    //bind(sock, (sockaddr*)&server_addr,  sizeof(server_addr));
     //将对象序列化并发送
-    bank_data data(amout);
+    bank_data data(amount);
+    data.set_time(std::chrono::system_clock::from_time_t(timestamp));
     std::string message = data.serialize();
-    //std::cout<<"message"<<message<<"port"<<server_addr.sin_port<<std::endl;
-    //std::cout<<"send_transfer send port"<<htons(this->bank_port)<<" to port"<<server_addr.sin_port<<std::endl;
+
     int sent_bytes = sendto(sock, message.c_str(), message.size(), 0, (sockaddr*)&server_addr, sizeof(server_addr));
     if (sent_bytes == SOCKET_ERROR) {
         std::cerr << "sendto failed! Error: " << WSAGetLastError() << std::endl;
     } else {
         std::cout << "Sent message: " << message <<" From "<<this->bank_port<<" To "<<ntohl(server_addr.sin_port)<<std::endl;
+        this->set_balance(this->balance-amount);
     }
-    //获取发送的时间戳
-    auto now = std::chrono::system_clock::now();
-    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-    timestamp = std::ctime(&now_time);
-    //接受ack,调整余额
-    socklen_t server_addr_len = sizeof(server_addr);
-    int recv_len = recvfrom(sock, buffer, sizeof(buffer) - 1, 0, (sockaddr*)&server_addr, &server_addr_len);
-    buffer[recv_len] = '\0';
-    //std::cout<<"buffer"<<buffer<<std::endl;
-    if(buffer == "ACK: "+message) {
-        this->set_balance(this->balance - data.get_transfer());
-        closesocket(sock);
-        WSACleanup();
-        return true;
-    }
-
-    closesocket(sock);
-    WSACleanup();
-    return false;
+    //closesocket(sock);
+    //WSACleanup();
 }
 
 
@@ -137,16 +120,18 @@ void bank::receive_transfer() {
     while (true) {
         // 接收数据
         memset(buffer, 0, sizeof(buffer));
-        //std::cout << "Waiting for data on port " << ntohs(server_addr.sin_port) << std::endl;
-        //std::cout << "Socket before recvfrom: " << sock << std::endl;
         int len = recvfrom(sock, buffer, sizeof(buffer) - 1, 0, nullptr, nullptr);
         if (len == SOCKET_ERROR) {
-            //std::cout << "Socket before recvfrom: " << sock << std::endl;
-            //std::cerr << "recvfrom failed! Error: " << WSAGetLastError() << std::endl;
-            continue;
+            if (WSAGetLastError() == WSAEWOULDBLOCK) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            } else {
+                std::cerr << "Error receiving message: " << WSAGetLastError() << std::endl;
+                continue;
+            }
         }
         buffer[len] = '\0';
-
+        std::string message(buffer);
 
         // 输出接收到的消息
         std::cout << "Received message: " << buffer << std::endl;
@@ -157,29 +142,18 @@ void bank::receive_transfer() {
             bank_data received_data = bank_data::deserialize(received_message);
 
             // 检查转账金额
-            float transfer_amount = received_data.get_transfer();
-            if (transfer_amount == 0) {
+            int transfer_amount = received_data.get_transfer();
+            auto timestamp = received_data.get_time();
+            if (snapshot_flag) {
                 // 如果是快照信号
-                this->snapshot_flag = true;
-
-                auto time = received_data.get_time();
-                std::time_t t = std::chrono::system_clock::to_time_t(time);
-                std::cout << "Received snapshot at: " << std::ctime(&t) << std::endl;
-
-                int snapshot_balance = this->record();
-                std::cout << "Snapshot balance of node " << this->get_bank_id() << " is: " << snapshot_balance << std::endl;
-                break; // 退出循环，不再接收数据
+                std::lock_guard<std::mutex> lock(message_mutex);
+                inbound_messages.push_back(message);
+                std::cout << "Message added to inbound queue: " << message << std::endl;
             }
 
             // 否则，更新余额
             this->set_balance(this->balance + transfer_amount);
             std::cout << "Transfer received: " << transfer_amount << ", new balance: " << this->balance << std::endl;
-
-            // 发送 ACK
-            std::string ack_message = "ACK: " + std::string(buffer);
-            std::cout<<"ack_message"<<ack_message<<std::endl;
-            sendto(sock, ack_message.c_str(), ack_message.size(), 0, (sockaddr*)&client_addr, client_len);
-
         } catch (const std::exception& e) {
             std::cerr << "Error during deserialization: " << e.what() << std::endl;
         }
@@ -217,8 +191,29 @@ void bank::snapshot() {
 }
 
 int bank::record(){
-    int balanbce = this->balance;
-    return balanbce;
+    // 保存当前余额
+    int current_balance = this->get_balance();
+    std::cout << "Recording snapshot: Bank ID " << this->bank_id
+              << ", Balance: " << current_balance << std::endl;
+
+    // 保存入站消息
+    std::lock_guard<std::mutex> lock(message_mutex);
+    std::cout << "Inbound messages during snapshot:" << std::endl;
+    for (const auto &message : inbound_messages) {
+        try {
+            bank_data data = bank_data::deserialize(message);
+            std::cout << " - Amount=" << data.get_transfer()
+                      << ", Timestamp=" << std::chrono::system_clock::to_time_t(data.get_time()) << std::endl;
+        } catch (const std::exception &e) {
+            std::cerr << "Error deserializing inbound message: " << e.what() << std::endl;
+        }
+    }
+
+    // 清空入站队列
+    inbound_messages.clear();
+
+    // 结束快照
+    snapshot_flag = false;
 }
 
 bank::~bank(){

@@ -41,6 +41,7 @@ private:
     Ui::MainWindow *ui;
     QTimer *transferTimer; // 定时器
     std::mutex banksMutex; // 用于线程安全的互斥锁
+    std::atomic<bool> snapshotFlag; // 快照触发标志
 };
 
 

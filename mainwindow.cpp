@@ -21,7 +21,9 @@ bool add_bank(int id, int balance) {
     }
 
     // 添加新的 Bank 对象
-    Banks.emplace(id, bank());
+    Banks.emplace(std::piecewise_construct,
+                  std::forward_as_tuple(bank_number),
+                  std::forward_as_tuple());
     Id2Port.emplace(bank_number, Banks[bank_number].get_port());
     Banks[bank_number].set_balance(balance);
     std::cout << "Bank with ID " << id << " added successfully." << std::endl;
@@ -31,9 +33,11 @@ bool add_bank(int id, int balance) {
 
 
 MainWindow::MainWindow(QWidget *parent) :
-        QMainWindow(parent), ui(new Ui::MainWindow) {
+        QMainWindow(parent),
+        ui(new Ui::MainWindow),
+        snapshotFlag(false),
+        transferTimer(new QTimer(this)) {
     ui->setupUi(this);
-    transferTimer = new QTimer(this); // 初始化定时器
     // 增加新银行
     connect(ui->AddNode, &QPushButton::clicked, this, &MainWindow::Clicked_AddPC);
     // 开始转账
@@ -42,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->GetSnapshot, &QPushButton::clicked, this, &MainWindow::Clicked_Snapshot);
     // 定时执行转账
     connect(transferTimer, &QTimer::timeout, this, &MainWindow::PerformTransfer);
+
+    std::srand(std::time(nullptr));
 }
 //增加新银行
 void MainWindow::Clicked_AddPC() {
@@ -49,20 +55,13 @@ void MainWindow::Clicked_AddPC() {
     int balance = rand() % 100000 + 1000;
     add_bank(bank_number, balance);
     std::thread t(&bank::receive_transfer, &Banks[bank_number]);
-    /*
-    std::thread t([=]() {
-        std::string threadName = "Bank" + std::to_string(bank_number);
-        std::cout << "Thread started: " << threadName << std::endl;
-        Banks[bank_number].receive_transfer();
-    });
-     */
     t.detach();
     //Id2Thread[bank_number] = std::move(t);
     bank_number++;
 }
 void MainWindow::Clicked_StartTransfer() {
-    std::cout << "Start Transfer" << std::endl;
-    transferTimer->start(2000); // 每2秒执行一次
+        std::cout << "Start Transfer" << std::endl;
+        transferTimer->start(1000); // 每2秒执行一次
 }
 
 
@@ -86,8 +85,8 @@ void MainWindow::PerformTransfer() {
     int resource_balance = Banks[random_bank_resource].get_balance();
     int amount = 1 + rand() % (resource_balance - 1);
 
-    std::string timestamp;
-    bool ack = Banks[random_bank_resource].send_transfer(random_bank_target, amount, timestamp);
+    std::time_t timestamp = std::time(nullptr);
+    Banks[random_bank_resource].send_transfer(random_bank_target, amount, timestamp);
 
     // 更新 UI 表格
     int row = ui->TransferTbale->rowCount();
@@ -95,20 +94,18 @@ void MainWindow::PerformTransfer() {
     ui->TransferTbale->setItem(row, 0, new QTableWidgetItem(QString::number(random_bank_resource)));
     ui->TransferTbale->setItem(row, 1, new QTableWidgetItem(QString::number(random_bank_target)));
     ui->TransferTbale->setItem(row, 2, new QTableWidgetItem(QString::number(amount)));
-    ui->TransferTbale->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(timestamp)));
-
-    if (ack) {
-        for (int col = 0; col < 4; col++) {
-            ui->TransferTbale->item(row, col)->setBackground(Qt::green);
-        }
-    }
+    ui->TransferTbale->setItem(row, 3, new QTableWidgetItem(QString::fromStdString(std::ctime(&timestamp))));
+    ui->TransferTbale->resizeColumnToContents(3);
     ui->TransferTbale->update();
 }
 void MainWindow::Clicked_Snapshot() {
     std::lock_guard<std::mutex> lock(banksMutex);
-    int random_bank = 1 + rand() % (bank_number - 1);
-    Banks[random_bank].snapshot();
-    snapshot_flag = true;
+    snapshotFlag = true;
+
+    // 广播快照信号
+    for (auto &entry : Banks) {
+        entry.second.snapshot();
+    }
 
     // 更新余额表格
     int row = 0;
@@ -125,7 +122,15 @@ void MainWindow::Clicked_Snapshot() {
 
         row++;
     }
+    ui->BalanceTable->setItem(row, 0, new QTableWidgetItem("Total"));
+    int total_balance = 0;
+    for (const auto &entry : Banks) {
+        total_balance += entry.second.get_balance();
+    }
+    ui->BalanceTable->setItem(row, 1, new QTableWidgetItem(QString::number(total_balance)));
+    snapshotFlag = false;
 }
+
 
 MainWindow::~MainWindow() {
     delete ui;
