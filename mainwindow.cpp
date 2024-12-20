@@ -27,6 +27,7 @@ bool add_bank(int id, int balance) {
     Id2Port.emplace(bank_number, Banks[bank_number].get_port());
     Banks[bank_number].set_balance(balance);
     std::cout << "Bank with ID " << id << " added successfully." << std::endl;
+
     return true;
 }
 
@@ -57,11 +58,16 @@ void MainWindow::Clicked_AddPC() {
     std::thread t(&bank::receive_transfer, &Banks[bank_number]);
     t.detach();
     //Id2Thread[bank_number] = std::move(t);
+
+    int row = ui->BalanceTable->rowCount();
+    ui->BalanceTable->insertRow(row);
+    ui->BalanceTable->setItem(row, 0, new QTableWidgetItem(QString::number(bank_number)));
+    ui->BalanceTable->setItem(row, 1, new QTableWidgetItem(QString::number(balance)));
     bank_number++;
 }
 void MainWindow::Clicked_StartTransfer() {
         std::cout << "Start Transfer" << std::endl;
-        transferTimer->start(1000); // 每2秒执行一次
+        transferTimer->start(500); // 每0.5秒执行一次
 }
 
 
@@ -101,6 +107,21 @@ void MainWindow::PerformTransfer() {
 void MainWindow::Clicked_Snapshot() {
     std::lock_guard<std::mutex> lock(banksMutex);
     snapshotFlag = true;
+
+    auto now = std::chrono::system_clock::now();
+    std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+    int table_row = ui->TransferTbale->rowCount();
+    ui->TransferTbale->insertRow(table_row);
+    ui->TransferTbale->setItem(table_row, 0, new QTableWidgetItem(QString::number(-1)));
+    ui->TransferTbale->setItem(table_row, 1, new QTableWidgetItem(QString::number(-1)));
+    ui->TransferTbale->setItem(table_row, 2, new QTableWidgetItem(QString::number(0)));
+    ui->TransferTbale->setItem(table_row, 3, new QTableWidgetItem(QString::fromStdString(std::ctime(&now_c))));
+    ui->TransferTbale->resizeColumnToContents(3);
+    ui->TransferTbale->update();
+
+    for(int col = 0; col <  ui->TransferTbale->columnCount(); ++col){
+        ui->TransferTbale->item(table_row, col)->setBackground(QColor(255, 0, 0));
+    }
 
     // 广播快照信号
     for (auto &entry : Banks) {
