@@ -3,6 +3,11 @@
 + This project is a presentation of  Chandy-Lamport Algorithm
 + The project is based on banks mutual withdraw
 
+# Environment
+windows 11 
+c++ 20
+cmake 3.29
+qt 6.8.1
 
 
 # Function
