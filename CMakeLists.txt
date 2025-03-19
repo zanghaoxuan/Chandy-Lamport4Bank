@@ -23,7 +23,8 @@ add_executable(bank main.cpp
         bank_data.cpp
         bank_data.h
         mainwindow.cpp
-        moc_ui_mainwindow.cpp)
+        moc_mainwindow.cpp
+)
 target_link_libraries(bank
         Qt::Core
         Qt::Gui

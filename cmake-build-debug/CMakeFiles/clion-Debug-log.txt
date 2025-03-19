@@ -1,0 +1,6 @@
+"F:\jetbrain\CLion 3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug "-DCMAKE_MAKE_PROGRAM=F:/jetbrain/CLion 3/bin/ninja/win/x64/ninja.exe" -G Ninja -S E:\code\c++\distibute_OS\bank -B E:\code\c++\distibute_OS\bank\cmake-build-debug
+CMake Error at CMakeLists.txt:1 (cmake_minimum_required):
+  CMake 3.29 or higher is required.  You are running version 3.28.6
+
+
+-- Configuring incomplete, errors occurred!

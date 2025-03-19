@@ -13,7 +13,6 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QHeaderView>
 #include <QtWidgets/QMainWindow>
-#include <QtWidgets/QMenuBar>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QStatusBar>
 #include <QtWidgets/QTableWidget>
@@ -30,7 +29,6 @@ public:
     QPushButton *StartTransfer;
     QTableWidget *TransferTbale;
     QTableWidget *BalanceTable;
-    QMenuBar *menubar;
     QStatusBar *statusbar;
 
     void setupUi(QMainWindow *MainWindow)
@@ -61,7 +59,7 @@ public:
         QTableWidgetItem *__qtablewidgetitem3 = new QTableWidgetItem();
         TransferTbale->setHorizontalHeaderItem(3, __qtablewidgetitem3);
         TransferTbale->setObjectName("TransferTbale");
-        TransferTbale->setGeometry(QRect(0, 10, 601, 221));
+        TransferTbale->setGeometry(QRect(10, 0, 601, 221));
         TransferTbale->setMaximumSize(QSize(16777215, 16777215));
         BalanceTable = new QTableWidget(centralwidget);
         if (BalanceTable->columnCount() < 2)
@@ -71,12 +69,8 @@ public:
         QTableWidgetItem *__qtablewidgetitem5 = new QTableWidgetItem();
         BalanceTable->setHorizontalHeaderItem(1, __qtablewidgetitem5);
         BalanceTable->setObjectName("BalanceTable");
-        BalanceTable->setGeometry(QRect(10, 240, 211, 131));
+        BalanceTable->setGeometry(QRect(10, 230, 211, 161));
         MainWindow->setCentralWidget(centralwidget);
-        menubar = new QMenuBar(MainWindow);
-        menubar->setObjectName("menubar");
-        menubar->setGeometry(QRect(0, 0, 629, 33));
-        MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName("statusbar");
         MainWindow->setStatusBar(statusbar);
